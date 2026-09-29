@@ -1,0 +1,269 @@
+{
+ "rows": [
+  {
+   "short": "12.48.25 (1)",
+   "category": "clean",
+   "true": 14,
+   "pred": 14,
+   "true_buttons": 0,
+   "pred_buttons": 0,
+   "ms": 1002.9205000028014,
+   "id": "P01"
+  },
+  {
+   "short": "12.48.26",
+   "category": "clean",
+   "true": 9,
+   "pred": 10,
+   "true_buttons": 0,
+   "pred_buttons": 0,
+   "ms": 758.1121999537572,
+   "id": "P02"
+  },
+  {
+   "short": "12.48.26 (1)",
+   "category": "clean",
+   "true": 7,
+   "pred": 7,
+   "true_buttons": 0,
+   "pred_buttons": 0,
+   "ms": 749.7658000793308,
+   "id": "P03"
+  },
+  {
+   "short": "12.48.26 (2)",
+   "category": "clean",
+   "true": 14,
+   "pred": 14,
+   "true_buttons": 0,
+   "pred_buttons": 0,
+   "ms": 777.0611000014469,
+   "id": "P04"
+  },
+  {
+   "short": "12.48.26 (3)",
+   "category": "clean",
+   "true": 14,
+   "pred": 14,
+   "true_buttons": 0,
+   "pred_buttons": 0,
+   "ms": 800.4920999519527,
+   "id": "P05"
+  },
+  {
+   "short": "12.48.26 (4)",
+   "category": "clean",
+   "true": 14,
+   "pred": 14,
+   "true_buttons": 0,
+   "pred_buttons": 0,
+   "ms": 770.736699923873,
+   "id": "P06"
+  },
+  {
+   "short": "12.48.26 (5)",
+   "category": "clean",
+   "true": 14,
+   "pred": 14,
+   "true_buttons": 0,
+   "pred_buttons": 0,
+   "ms": 725.5580000346527,
+   "id": "P07"
+  },
+  {
+   "short": "12.48.26 (7)",
+   "category": "clean",
+   "true": 12,
+   "pred": 12,
+   "true_buttons": 0,
+   "pred_buttons": 0,
+   "ms": 745.6973000662401,
+   "id": "P08"
+  },
+  {
+   "short": "12.48.26 (10)",
+   "category": "noisy",
+   "true": 14,
+   "pred": 12,
+   "true_buttons": 0,
+   "pred_buttons": 0,
+   "ms": 678.6231000442058,
+   "id": "P09"
+  },
+  {
+   "short": "12.48.26 (11)",
+   "category": "noisy",
+   "true": 14,
+   "pred": 13,
+   "true_buttons": 0,
+   "pred_buttons": 0,
+   "ms": 658.5502999369055,
+   "id": "P10"
+  },
+  {
+   "short": "12.48.26 (12)",
+   "category": "noisy",
+   "true": 14,
+   "pred": 14,
+   "true_buttons": 0,
+   "pred_buttons": 0,
+   "ms": 662.6607000362128,
+   "id": "P11"
+  },
+  {
+   "short": "12.48.26 (13)",
+   "category": "noisy",
+   "true": 14,
+   "pred": 13,
+   "true_buttons": 0,
+   "pred_buttons": 0,
+   "ms": 647.2117000957951,
+   "id": "P12"
+  },
+  {
+   "short": "12.48.26 (14)",
+   "category": "noisy",
+   "true": 14,
+   "pred": 13,
+   "true_buttons": 0,
+   "pred_buttons": 0,
+   "ms": 649.6194000355899,
+   "id": "P13"
+  },
+  {
+   "short": "12.48.26 (15)",
+   "category": "noisy",
+   "true": 14,
+   "pred": 22,
+   "true_buttons": 0,
+   "pred_buttons": 0,
+   "ms": 691.0998999373987,
+   "id": "P14"
+  },
+  {
+   "short": "12.48.26 (16)",
+   "category": "noisy",
+   "true": 14,
+   "pred": 12,
+   "true_buttons": 0,
+   "pred_buttons": 0,
+   "ms": 649.6293999953195,
+   "id": "P15"
+  },
+  {
+   "short": "12.48.26 (17)",
+   "category": "noisy",
+   "true": 14,
+   "pred": 14,
+   "true_buttons": 0,
+   "pred_buttons": 0,
+   "ms": 647.7638999931514,
+   "id": "P16"
+  },
+  {
+   "short": "12.48.26 (8)",
+   "category": "noisy",
+   "true": 14,
+   "pred": 15,
+   "true_buttons": 0,
+   "pred_buttons": 0,
+   "ms": 691.1143000470474,
+   "id": "P17"
+  },
+  {
+   "short": "12.48.26 (9)",
+   "category": "noisy",
+   "true": 14,
+   "pred": 14,
+   "true_buttons": 0,
+   "pred_buttons": 0,
+   "ms": 682.0429000072181,
+   "id": "P18"
+  },
+  {
+   "short": "12.48.25",
+   "category": "damaged",
+   "true": 14,
+   "pred": 10,
+   "true_buttons": 0,
+   "pred_buttons": 0,
+   "ms": 797.5458999862894,
+   "id": "P19"
+  },
+  {
+   "short": "12.48.26 (18)",
+   "category": "damaged",
+   "true": 14,
+   "pred": 17,
+   "true_buttons": 4,
+   "pred_buttons": 3,
+   "ms": 876.1869000736624,
+   "id": "P20"
+  },
+  {
+   "short": "12.48.26 (19)",
+   "category": "damaged",
+   "true": 10,
+   "pred": 9,
+   "true_buttons": 4,
+   "pred_buttons": 4,
+   "ms": 803.4120000666007,
+   "id": "P21"
+  },
+  {
+   "short": "12.48.26 (20)",
+   "category": "damaged",
+   "true": 12,
+   "pred": 9,
+   "true_buttons": 4,
+   "pred_buttons": 2,
+   "ms": 878.1656000064686,
+   "id": "P22"
+  },
+  {
+   "short": "12.48.26 (21)",
+   "category": "damaged",
+   "true": 13,
+   "pred": 12,
+   "true_buttons": 0,
+   "pred_buttons": 0,
+   "ms": 818.8402999658138,
+   "id": "P23"
+  },
+  {
+   "short": "12.48.26 (22)",
+   "category": "damaged",
+   "true": 14,
+   "pred": 14,
+   "true_buttons": 0,
+   "pred_buttons": 0,
+   "ms": 827.8204000089318,
+   "id": "P24"
+  },
+  {
+   "short": "12.48.26 (23)",
+   "category": "damaged",
+   "true": 14,
+   "pred": 13,
+   "true_buttons": 0,
+   "pred_buttons": 0,
+   "ms": 769.3542999913916,
+   "id": "P25"
+  },
+  {
+   "short": "12.48.26 (6)",
+   "category": "damaged",
+   "true": 11,
+   "pred": 8,
+   "true_buttons": 0,
+   "pred_buttons": 0,
+   "ms": 688.2113999454305,
+   "id": "P26"
+  }
+ ],
+ "synthetic_detected": 6,
+ "folds_rejected": 63,
+ "runtime_ms_mean": 748.0075423149034,
+ "runtime_ms_min": 647.2117000957951,
+ "runtime_ms_max": 1002.9205000028014
+}
