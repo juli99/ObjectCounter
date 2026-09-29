@@ -45,7 +45,7 @@ def rgb(bgr):
 
 
 def save(fig, name):
-    fig.savefig(OUT / name, dpi=200, bbox_inches="tight", facecolor="white")
+    fig.savefig(OUT / name, dpi=300, bbox_inches="tight", facecolor="white")
     plt.close(fig)
 
 
@@ -292,6 +292,64 @@ def fig_all_inputs(rows):
     save(fig, "figA_inputs.png")
 
 
+def fig_poster_inputs():
+    """Three representative input photos for the poster's introduction."""
+    items = [("12.48.26 (4)", "Clean"), ("12.48.26 (11)", "Dark / blurred"), ("12.48.26 (18)", "Buttons mixed in")]
+    fig, axes = plt.subplots(1, 3, figsize=(9, 5.4))
+    for ax, (sh, title) in zip(axes, items):
+        img = cc.load_image(img_path(sh))
+        if "11" in sh:  # brighten the dark photo so the coins are visible on print
+            lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+            lab[..., 0] = cv2.createCLAHE(3.0, (8, 8)).apply(lab[..., 0])
+            img = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
+        ax.imshow(rgb(img[150:1450]))
+        ax.set_title(title, fontsize=14, color=NAVY, fontweight="bold")
+        ax.axis("off")
+    save(fig, "poster_inputs.png")
+
+
+def qr_to_repo(url="https://github.com/juli99/ObjectCounter"):
+    import qrcode
+    qr = qrcode.QRCode(border=2, box_size=20, error_correction=qrcode.constants.ERROR_CORRECT_M)
+    qr.add_data(url)
+    qr.make(fit=True)
+    qr.make_image(fill_color="#0B3C74", back_color="white").save(OUT / "qr_repo.png")
+
+
+def poster_charts(rows):
+    """Poster versions of the two charts: smaller canvas + larger fonts, so text stays legible at B1."""
+    x = np.arange(len(rows))
+    with plt.rc_context({"font.size": 17}):
+        fig, ax = plt.subplots(figsize=(8, 4.6))
+        ax.bar(x, [r["fp"] for r in rows], color=ACCENT, label="FP: non-coin counted")
+        ax.bar(x, [-r["fn"] for r in rows], color=NAVY, label="FN: coin missed")
+        ax.axhline(0, color="black", lw=1)
+        for b in (7.5, 17.5):
+            ax.axvline(b, color=GREY, lw=1, ls="--")
+        for cx, name in ((3.5, "clean"), (12.5, "noisy"), (21.5, "damaged")):
+            ax.text(cx, 12.3, name, ha="center", color=GREY, fontsize=17, fontweight="bold")
+        ax.set_xticks(x[::5])
+        ax.set_xticklabels([rows[i]["id"] for i in range(0, len(rows), 5)])
+        ax.set_ylim(-6.5, 13.8)
+        ax.set_ylabel("Mistakes per photo")
+        ax.legend(frameon=False, loc="upper left", bbox_to_anchor=(0.0, 0.9), fontsize=15)
+        save(fig, "poster_fp_fn.png")
+
+        keys = [("fp_fold", "Fold /\nbackground"), ("fp_blur", "Blurred coin\ncounted twice"),
+                ("fp_edge", "Edge of\nthe pad"), ("fp_button", "Grey button")]
+        vals = [sum(r[k] for r in rows) for k, _ in keys]
+        ys = list(range(len(keys)))[::-1]
+        fig, ax = plt.subplots(figsize=(7.2, 4.6))
+        bars = ax.barh(ys, vals, color=[NAVY, "#64A8E8", ACCENT, "#1565C0"])
+        for b, v in zip(bars, vals):
+            ax.text(v + 0.4, b.get_y() + b.get_height() / 2, str(v), va="center", fontweight="bold", color=NAVY)
+        ax.set_yticks(ys)
+        ax.set_yticklabels([l for _, l in keys])
+        ax.set_xlabel("False positives")
+        ax.set_xlim(0, max(vals) + 4)
+        save(fig, "poster_fp_causes.png")
+
+
 def read_review():
     with open(ROOT / "detection_review.csv", encoding="utf-8-sig") as f:
         return {r["filename"]: r for r in csv.DictReader(f)}
@@ -335,6 +393,9 @@ def main():
     fig_examples([("12.48.26 (15)", "Motion blur: 22 vs 12"), ("12.48.25", "Dense pile: 10 vs 14"),
                   ("12.48.26 (6)", "Cut at frame: 8 vs 11")], "fig10_errors.png")
     fig_all_inputs(rows)
+    fig_poster_inputs()
+    poster_charts(rows)
+    qr_to_repo()
 
     stats = dict(rows=[{k: v for k, v in r.items() if k != "path"} for r in rows],
                  synthetic_detected=syn, folds_rejected=folds,

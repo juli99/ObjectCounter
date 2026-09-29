@@ -84,9 +84,8 @@ python run.py "data/some image.jpeg"  # תמונה בודדת
 ## דוח ופוסטר
 
 בתיקייה `report/`:
-- `Every_Coin_Counts_Report.docx` / `.pdf`: דוח הפרויקט המלא (23 עמודים, באנגלית).
-- `Every_Coin_Counts_Poster.docx` / `.pdf`: פוסטר בגודל A3. אפשר להדפיס אותו מוגדל ל-A1 או 70×100 ס"מ.
+- `Every Coin Counts - Report (Yulia Rapana).docx` / `.pdf`: דוח הפרויקט המלא (23 עמודים, באנגלית, בלשון סבילה).
+- `Every Coin Counts - Poster (Yulia Rapana).pptx` / `.pdf`: פוסטר PowerPoint בגודל B1 (70×100 ס"מ), לפי דרישות HIT R03. גופנים: שם הפרויקט 76, כותרות הסעיפים ושמות 54, קורס וסמסטר 40, טקסט 32–34. הסעיפים: Introduction, Method, Results, Conclusions, Discussions, ו-QR לריפו.
 - `make_figures.py`: מייצר מחדש את כל האיורים והמספרים (`python report/make_figures.py`).
-- `build_report.js`, `build_poster.js`: בונים את קובצי ה-Word מהאיורים (`npm install docx`, ואז `node report/build_report.js .` מתיקיית הפרויקט).
-
-את השמות, המרצה, המוסד והסמסטר צריך למלא ב-Word במקום הסוגריים המרובעים.
+- `build_poster_pptx.js`: בונה את הפוסטר (`npm install pptxgenjs`, ואז `node report/build_poster_pptx.js` מתיקיית הפרויקט).
+- `build_report.js`: בנה את גרסת הבסיס של הדוח. הדוח נערך אחר כך ב-Word, ולכן הרצה מחדש תמחק את העריכות.
