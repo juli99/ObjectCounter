@@ -1,0 +1,27 @@
+﻿id,filename,category,true_coins,machine_coins,tp,fp,fn,fp_fold_or_background,fp_blur_duplicate,fp_pad_edge,fp_grey_button
+P01,WhatsApp Image 2026-09-01 at 12.48.25 (1).jpeg,clean,14,14,14,0,0,0,0,0,0
+P02,WhatsApp Image 2026-09-01 at 12.48.26.jpeg,clean,9,10,9,1,0,1,0,0,0
+P03,WhatsApp Image 2026-09-01 at 12.48.26 (1).jpeg,clean,7,7,7,0,0,0,0,0,0
+P04,WhatsApp Image 2026-09-01 at 12.48.26 (2).jpeg,clean,14,14,14,0,0,0,0,0,0
+P05,WhatsApp Image 2026-09-01 at 12.48.26 (3).jpeg,clean,14,14,14,0,0,0,0,0,0
+P06,WhatsApp Image 2026-09-01 at 12.48.26 (4).jpeg,clean,14,14,14,0,0,0,0,0,0
+P07,WhatsApp Image 2026-09-01 at 12.48.26 (5).jpeg,clean,14,14,14,0,0,0,0,0,0
+P08,WhatsApp Image 2026-09-01 at 12.48.26 (7).jpeg,clean,12,12,12,0,0,0,0,0,0
+P09,WhatsApp Image 2026-09-01 at 12.48.26 (10).jpeg,noisy,13,12,12,0,1,0,0,0,0
+P10,WhatsApp Image 2026-09-01 at 12.48.26 (11).jpeg,noisy,13,13,11,2,2,2,0,0,0
+P11,WhatsApp Image 2026-09-01 at 12.48.26 (12).jpeg,noisy,13,14,13,1,0,1,0,0,0
+P12,WhatsApp Image 2026-09-01 at 12.48.26 (13).jpeg,noisy,12,13,12,1,0,1,0,0,0
+P13,WhatsApp Image 2026-09-01 at 12.48.26 (14).jpeg,noisy,12,13,10,3,2,3,0,0,0
+P14,WhatsApp Image 2026-09-01 at 12.48.26 (15).jpeg,noisy,12,22,10,12,2,5,7,0,0
+P15,WhatsApp Image 2026-09-01 at 12.48.26 (16).jpeg,noisy,12,12,11,1,1,1,0,0,0
+P16,WhatsApp Image 2026-09-01 at 12.48.26 (17).jpeg,noisy,12,14,11,3,1,3,0,0,0
+P17,WhatsApp Image 2026-09-01 at 12.48.26 (8).jpeg,noisy,14,15,14,1,0,0,1,0,0
+P18,WhatsApp Image 2026-09-01 at 12.48.26 (9).jpeg,noisy,14,14,12,2,2,2,0,0,0
+P19,WhatsApp Image 2026-09-01 at 12.48.25.jpeg,damaged,14,10,10,0,4,0,0,0,0
+P20,WhatsApp Image 2026-09-01 at 12.48.26 (18).jpeg,damaged,14,17,14,3,0,0,0,2,1
+P21,WhatsApp Image 2026-09-01 at 12.48.26 (19).jpeg,damaged,9,9,7,2,2,1,0,1,0
+P22,WhatsApp Image 2026-09-01 at 12.48.26 (20).jpeg,damaged,13,9,8,1,5,0,0,0,1
+P23,WhatsApp Image 2026-09-01 at 12.48.26 (21).jpeg,damaged,14,12,11,1,3,0,0,1,0
+P24,WhatsApp Image 2026-09-01 at 12.48.26 (22).jpeg,damaged,14,14,11,3,3,1,0,2,0
+P25,WhatsApp Image 2026-09-01 at 12.48.26 (23).jpeg,damaged,14,13,11,2,3,1,0,1,0
+P26,WhatsApp Image 2026-09-01 at 12.48.26 (6).jpeg,damaged,11,8,8,0,3,0,0,0,0

@@ -164,7 +164,7 @@ def fig_buttons():
         img = cc.load_image(img_path(sh))
         r = cc.count_coins(img)
         ax.imshow(rgb(cc.draw_result(img, r)[200:1400]))
-        ax.set_title(f"{r.coins} coins, {r.buttons} of 4 buttons flagged", fontsize=11, color=NAVY, fontweight="bold")
+        ax.set_title(f"{r.coins} coins counted, {r.buttons} non-coins rejected", fontsize=11, color=NAVY, fontweight="bold")
         ax.axis("off")
     save(fig, "fig08_buttons.png")
 
@@ -195,19 +195,73 @@ def fig_examples(items, name):
 
 
 def fig_per_image(rows):
-    rows = sorted(rows, key=lambda r: (["clean", "noisy", "damaged"].index(r["category"]), r["short"]))
-    err = [r["pred"] - r["true"] for r in rows]
-    fig, ax = plt.subplots(figsize=(13, 4))
-    ax.bar(range(len(rows)), err, color=[CAT_COLOURS[r["category"]] for r in rows])
+    """Per photo: FP above the axis, FN below — two different kinds of mistake."""
+    x = np.arange(len(rows))
+    fig, ax = plt.subplots(figsize=(13, 4.2))
+    ax.bar(x, [r["fp"] for r in rows], color=ACCENT, label="FP: non-coin counted as coin")
+    ax.bar(x, [-r["fn"] for r in rows], color=NAVY, label="FN: real coin missed")
     ax.axhline(0, color="black", lw=0.8)
-    ax.set_xticks(range(len(rows)))
+    for xi, r in zip(x, rows):
+        if r["fp"]:
+            ax.text(xi, r["fp"] + 0.2, str(r["fp"]), ha="center", fontsize=8, color=ACCENT)
+        if r["fn"]:
+            ax.text(xi, -r["fn"] - 0.9, str(r["fn"]), ha="center", fontsize=8, color=NAVY)
+    for b in (7.5, 17.5):
+        ax.axvline(b, color=GREY, lw=0.8, ls="--")
+    for cx, name in ((3.5, "clean"), (12.5, "noisy"), (21.5, "damaged")):
+        ax.text(cx, 12.6, name, ha="center", color=GREY, fontsize=10, fontweight="bold")
+    ax.set_xticks(x)
     ax.set_xticklabels([r["id"] for r in rows], fontsize=9)
-    ax.set_xlabel("Photo")
-    ax.set_ylabel("Predicted − true coins")
-    for c, col in CAT_COLOURS.items():
-        ax.bar(0, 0, color=col, label=c)
-    ax.legend(frameon=False, ncol=3, loc="upper left")
+    ax.set_ylim(-6.5, 13.5)
+    ax.set_ylabel("Mistakes per photo")
+    ax.legend(frameon=False, ncol=1, loc="upper left", bbox_to_anchor=(0.0, 0.88))
     save(fig, "fig04_per_image.png")
+
+
+def fig_fp_causes(rows):
+    """What the machine counted as a coin although it was not one."""
+    keys = [("fp_fold", "Pad fold /\nbackground"), ("fp_blur", "Blurred coin\ncounted twice"),
+            ("fp_edge", "Edge of\nthe pad"), ("fp_button", "Grey button")]
+    vals = [sum(r[k] for r in rows) for k, _ in keys]
+    ys = list(range(len(keys)))[::-1]
+    fig, ax = plt.subplots(figsize=(7.5, 3.4))
+    bars = ax.barh(ys, vals, color=[NAVY, "#64A8E8", ACCENT, "#1565C0"])
+    for b, v in zip(bars, vals):
+        ax.text(v + 0.4, b.get_y() + b.get_height() / 2, str(v), va="center", fontweight="bold", color=NAVY)
+    ax.set_yticks(ys)
+    ax.set_yticklabels([l for _, l in keys])
+    ax.set_xlabel(f"False positives (total {sum(vals)})")
+    ax.set_xlim(0, max(vals) + 4)
+    save(fig, "fig11_fp_causes.png")
+
+
+def fig_hidden_errors(short="12.48.26 (11)"):
+    """An 'exact' count can hide mistakes that cancel out."""
+    img = cc.load_image(img_path(short))
+    res = cc.count_coins(img)
+    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    lab[..., 0] = cv2.createCLAHE(3.0, (8, 8)).apply(lab[..., 0])
+    enh = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
+    # From the circle-by-circle review: the two top-most circles lie on empty pad (FP),
+    # and two faint coins have no circle (FN).
+    objs = sorted(res.objects, key=lambda o: o.center[1])
+    fp, ok = objs[:2], objs[2:]
+    missed = [(208, 611), (687, 1035)]
+    ann = enh.copy()
+    for o in ok:
+        cv2.circle(ann, (int(o.center[0]), int(o.center[1])), int(o.radius), (0, 200, 0), 4)
+    for o in fp:
+        x, y, r = int(o.center[0]), int(o.center[1]), int(o.radius)
+        cv2.circle(ann, (x, y), r, (0, 0, 255), 5)
+        cv2.putText(ann, "FP", (x + r + 4, y + 10), cv2.FONT_HERSHEY_SIMPLEX, 1.1, (0, 0, 255), 3)
+    for x, y in missed:
+        cv2.circle(ann, (x, y), 40, (255, 160, 0), 5)
+        cv2.putText(ann, "FN", (x + 44, y + 10), cv2.FONT_HERSHEY_SIMPLEX, 1.1, (255, 160, 0), 3)
+    fig, axes = plt.subplots(1, 2, figsize=(8, 6.2))
+    axes[0].imshow(rgb(enh[250:1350]))
+    axes[1].imshow(rgb(ann[250:1350]))
+    label_panels(axes, ["Dark photo (contrast enhanced)", f"{res.coins} counted = {res.coins} true, but 2 FP + 2 FN"])
+    save(fig, "fig12_hidden_errors.png")
 
 
 def fig_progress():
@@ -220,6 +274,7 @@ def fig_progress():
     ax.set_xticks(range(len(mae)))
     ax.set_xticklabels(versions, fontsize=9)
     ax.set_ylabel("Mean absolute error\n(coins per photo)")
+    ax.text(len(mae) - 1, 7.8, "measured against the preliminary count", ha="right", fontsize=8, color=GREY)
     ax.set_ylim(0, 8.5)
     save(fig, "fig06_progress.png")
 
@@ -237,18 +292,28 @@ def fig_all_inputs(rows):
     save(fig, "figA_inputs.png")
 
 
+def read_review():
+    with open(ROOT / "detection_review.csv", encoding="utf-8-sig") as f:
+        return {r["filename"]: r for r in csv.DictReader(f)}
+
+
 def main():
     gt = read_gt()
+    review = read_review()
     rows, times = [], []
     for p in sorted(DATA.glob("*.jpeg")):
         img = cc.load_image(p)
         t0 = time.perf_counter()
         r = cc.count_coins(img)
         times.append((time.perf_counter() - t0) * 1000)
-        g = gt[p.name]
+        g, v = gt[p.name], review[p.name]
+        assert int(v["machine_coins"]) == r.coins, f"review is out of date for {p.name}"
         rows.append(dict(path=str(p), short=p.stem.replace("WhatsApp Image 2026-09-01 at ", ""),
                          category=g["category"], true=int(g["true_count"]), pred=r.coins,
-                         true_buttons=int(g["true_buttons"]), pred_buttons=r.buttons, ms=times[-1]))
+                         true_noncoin=int(g["true_noncoin_round"]), rejected_noncoin=r.buttons,
+                         tp=int(v["tp"]), fp=int(v["fp"]), fn=int(v["fn"]),
+                         fp_fold=int(v["fp_fold_or_background"]), fp_blur=int(v["fp_blur_duplicate"]),
+                         fp_edge=int(v["fp_pad_edge"]), fp_button=int(v["fp_grey_button"]), ms=times[-1]))
 
     # Stable photo IDs (P01…) ordered by category, used everywhere in the report
     order = ["clean", "noisy", "damaged"]
@@ -260,12 +325,14 @@ def main():
     fig_stages()
     syn = fig_synthetic()
     fig_per_image(rows)
-    fig_examples([("12.48.26 (4)", "Clean: 14 of 14"), ("12.48.26 (1)", "Clean: 7 of 7"),
-                  ("12.48.26 (12)", "Dark: 14 of 14")], "fig05_exact.png")
+    fig_examples([("12.48.26 (4)", "P06 · 14 of 14"), ("12.48.26 (1)", "P03 · 7 of 7"),
+                  ("12.48.26 (5)", "P07 · 14 of 14")], "fig05_exact.png")
+    fig_fp_causes(rows)
+    fig_hidden_errors()
     fig_progress()
     folds = fig_folds()
     fig_buttons()
-    fig_examples([("12.48.26 (15)", "Motion blur: 22 vs 14"), ("12.48.25", "Dense pile: 10 vs 14"),
+    fig_examples([("12.48.26 (15)", "Motion blur: 22 vs 12"), ("12.48.25", "Dense pile: 10 vs 14"),
                   ("12.48.26 (6)", "Cut at frame: 8 vs 11")], "fig10_errors.png")
     fig_all_inputs(rows)
 

@@ -23,26 +23,32 @@ const sum = (a) => a.reduce((x, y) => x + y, 0);
 const T = sum(rows.map((r) => r.true));
 const P = sum(rows.map((r) => r.pred));
 const E = sum(rows.map((r) => Math.abs(r.pred - r.true)));
+const TP = sum(rows.map((r) => r.tp)), FP = sum(rows.map((r) => r.fp)), FN = sum(rows.map((r) => r.fn));
+const precision = 100 * TP / (TP + FP), recall = 100 * TP / (TP + FN);
 const exact = rows.filter((r) => r.pred === r.true).length;
-const within1 = rows.filter((r) => Math.abs(r.pred - r.true) <= 1).length;
-const over = rows.filter((r) => r.pred > r.true).length;
-const under = rows.filter((r) => r.pred < r.true).length;
+const perfect = rows.filter((r) => r.fp === 0 && r.fn === 0).length;
+const hidden = rows.filter((r) => r.pred === r.true && (r.fp > 0 || r.fn > 0));
 const mae = E / rows.length;
 const countAcc = 100 * (1 - E / T);
-const btnTrue = sum(rows.map((r) => r.true_buttons));
-const btnFound = sum(rows.map((r) => r.pred_buttons));
+const nonCoin = sum(rows.map((r) => r.true_noncoin));
+const rejected = sum(rows.map((r) => r.rejected_noncoin));
+const fpCause = { fold: sum(rows.map((r) => r.fp_fold)), blur: sum(rows.map((r) => r.fp_blur)),
+  edge: sum(rows.map((r) => r.fp_edge)), button: sum(rows.map((r) => r.fp_button)) };
 const ms = rows.map((r) => r.ms);
 const msMean = sum(ms) / ms.length;
 const byCat = {};
 for (const c of ["clean", "noisy", "damaged"]) {
   const g = rows.filter((r) => r.category === c);
-  const e = g.map((r) => Math.abs(r.pred - r.true));
-  byCat[c] = { n: g.length, coins: sum(g.map((r) => r.true)), mae: sum(e) / g.length,
-    exact: g.filter((r) => r.pred === r.true).length, w1: e.filter((x) => x <= 1).length };
+  const tp = sum(g.map((r) => r.tp)), fp = sum(g.map((r) => r.fp)), fn = sum(g.map((r) => r.fn));
+  byCat[c] = { n: g.length, coins: sum(g.map((r) => r.true)), pred: sum(g.map((r) => r.pred)), tp, fp, fn,
+    prec: 100 * tp / (tp + fp), rec: 100 * tp / (tp + fn), mae: sum(g.map((r) => Math.abs(r.pred - r.true))) / g.length,
+    exact: g.filter((r) => r.pred === r.true).length };
 }
+const f1 = (x) => x.toFixed(1);
 const f2 = (x) => x.toFixed(2);
 const byId = Object.fromEntries(rows.map((r) => [r.short, r]));
 const pid = (short) => byId[short].id;
+const row = (short) => byId[short];
 
 // ── helpers ────────────────────────────────────────────────────────
 const run = (text, o = {}) => new TextRun({ text, font: o.font || FONT, size: o.size || 21, bold: o.bold,
@@ -193,10 +199,10 @@ const cover = [
   para("", { after: 200 }),
   new Table({ width: { size: CONTENT, type: WidthType.DXA }, columnWidths: [CONTENT], rows: [new TableRow({ children: [cell([
     para([run("Abstract", { size: 26, bold: true, color: BLUE })], { align: AlignmentType.LEFT, after: 100 }),
-    para(`Counting coins sounds easy until the coins lie on a crumpled white pad full of folds and seams, some photos are dark or blurred, coins pile up on each other, and buttons of the same size are mixed in. We built a classical image-processing system, with no machine learning, that counts only the coins. It models the pad and the lighting with a very large median filter, finds round blobs with a multi-scale Laplacian of Gaussian, rejects pad folds with a Hessian shape test and a grayscale opening, and separates touching coins with a Hough circle transform. Buttons are recognised by their sewing holes (black-hat transform) and by colours no coin has.`, { after: 100 }),
-    para(`On ${rows.length} phone photographs with ${T} coins and ${btnTrue} buttons the system reported ${P} coins, a total counting error of ${E} coins (${f2(countAcc)}% count accuracy). ${exact} photographs were counted exactly and ${within1} were within one coin; on clean photographs the mean error was ${f2(byCat.clean.mae)} coins per photo. ${btnFound} of the ${btnTrue} buttons were recognised and excluded. The hard cases were strong motion blur, dense piles and coins cut by the image frame.`, { after: 60 }),
+    para(`Counting coins sounds easy until the coins lie on a crumpled white pad full of folds, some photos are dark or blurred, coins pile up, and round buttons of the same size are mixed in. We built a classical image-processing system, with no machine learning, that counts only the coins. It models the pad and the lighting with a very large median filter, finds round blobs with a multi-scale Laplacian of Gaussian, rejects pad folds with a Hessian shape test and a grayscale opening, separates touching coins with a Hough circle transform, and rejects buttons by their sewing holes (black-hat transform) and by colours no coin has.`, { after: 100 }),
+    para(`We counted the coins in ${rows.length} phone photographs by hand (${T} coins, ${nonCoin} other round objects) and then checked every circle the program drew. The program found ${TP} of the ${T} coins (recall ${f1(recall)}%), and ${TP} of its ${P} detections were real coins (precision ${f1(precision)}%): ${FP} false detections and ${FN} missed coins. On clean photographs it found every coin with a single false detection. ${exact} photos received the exact count, but the circle-by-circle review showed that ${hidden.length} of them contained mistakes that cancelled out. False detections came mostly from pad folds in dark photos and from motion blur; missed coins came from dense piles and coins cut by the frame.`, { after: 60 }),
   ], CONTENT, { fill: BLUE_LIGHT, pad: 220, padX: 300 })] })] }),
-  para([run("Keywords  ", { size: 18, bold: true, color: GREEN }), run("coin counting · Laplacian of Gaussian · Hessian · Hough circles · morphology · black-hat · button rejection", { size: 18, color: GREY })],
+  para([run("Keywords  ", { size: 18, bold: true, color: GREEN }), run("coin counting · Laplacian of Gaussian · Hessian · Hough circles · morphology · black-hat · precision and recall", { size: 18, color: GREY })],
     { align: AlignmentType.LEFT, before: 200 }),
 ];
 
@@ -206,10 +212,10 @@ const intro = [
   body("A person looking at a handful of coins on a table can count them at a glance. A computer receives only a grid of pixel values, and many things in a real photograph look round, dark or shiny: folds in the cloth, shadows, the pattern printed on the pad, and in our case buttons that have almost exactly the size of a coin."),
   body("Our photographs were taken with a phone from above, on a white disposable pad. The pad is the main difficulty: it has a quilted texture and deep fold lines that form a grid across the whole image. A simple threshold sees those folds as objects, and a circle detector finds circles in the texture. On top of that, some photos were taken in a dark room or with a moving hand, so coins become dim or smeared."),
   body("The system follows fixed rules chosen by us; it does not learn from labelled examples. We wanted every decision to be explainable with techniques from the course: filtering, morphology, derivatives, blob detection and the Hough transform."),
-  body("The project does not try to recognise the value of a coin. It answers only one question per object: is this a coin that should be counted, or something else (a fold, a shadow, a button)?"),
-  callout("Research question", ["Can a classical image-processing pipeline count the coins in phone photographs taken on a textured, folded pad, when the photos may be dark or blurred, coins may touch, overlap or be cut by the frame, and buttons of similar size are mixed in?"]),
+  body("Beyond the final number, we wanted to understand what the machine actually detects. For every photo we therefore compared each circle the program drew with the real scene: which coins it found, which non-coins it mistook for coins, and which coins it missed."),
+  callout("Research question", ["Can a classical image-processing pipeline count the coins in phone photographs taken on a textured, folded pad when the photos may be dark or blurred, coins may touch, overlap or be cut by the frame, and round non-coin objects are mixed in? And which kinds of objects does it wrongly accept or miss?"]),
   para("", { after: 120 }),
-  body("We expected clean photographs to be easy and the damaged ones, especially dense piles, to remain the main source of error, since a coin that is mostly hidden gives very little visible evidence."),
+  body("We expected clean photographs to be easy and the damaged ones, especially dense piles, to remain the main source of missed coins, since a coin that is mostly hidden gives very little visible evidence."),
 ];
 
 // ── 02 Methods ─────────────────────────────────────────────────────
@@ -217,27 +223,26 @@ const catRows = [
   ["Clean", `${byCat.clean.n}`, `${byCat.clean.coins}`, "Sharp, well lit, coins spread over the pad"],
   ["Noisy", `${byCat.noisy.n}`, `${byCat.noisy.coins}`, "Dark room and/or motion blur"],
   ["Damaged", `${byCat.damaged.n}`, `${byCat.damaged.coins}`, "Dense pile, coins cut by the frame, buttons among coins"],
-  ["Total", `${rows.length}`, `${T}`, `Plus ${btnTrue} buttons in three photographs`],
+  ["Total", `${rows.length}`, `${T}`, `Plus ${nonCoin} round non-coin objects (buttons) in three photographs`],
 ];
 const methods = [
   h1("02", "Methods"),
   h2("2.1 The photographs"),
-  body(`We used ${rows.length} photographs taken with a phone camera (1600 × 900 pixels). All show Israeli coins on the same kind of white pad, photographed from roughly the same height. Before running the program we counted the visible coins in each photograph by hand and wrote the counts to ground_truth.csv. A coin was counted when any part of it was visible; a coin completely hidden under others was not. Every photo received an ID (P01–P26) that is used throughout this report. The program is written in Python with OpenCV and NumPy.`),
+  body(`We used ${rows.length} photographs taken with a phone camera (1600 × 900 pixels). All show Israeli coins on the same kind of white pad, photographed from roughly the same height. Before evaluating, we counted the coins and the round non-coin objects in each photograph by hand from the original image (ground_truth.csv). Every photo received an ID (P01–P26) that is used throughout this report. The program is written in Python with OpenCV and NumPy.`),
   dataTable(["Category", "Photos", "Coins", "What makes it hard"], catRows, [1700, 1100, 1100, 6180], { boldLast: true, keep: true }),
   para("", { after: 80 }),
   body("We also generated a synthetic test image with six coloured discs on a light, noisy background, to check that detection, drawing and counting work before looking at the real photos."),
   h2("2.2 How we measured success"),
-  body("We did not mark the position of every coin, so the evaluation is done at the level of counts. For each photo we compare the predicted number of coins with the manual count and report:"),
+  body("Comparing only the final number hides a lot: a photo can get the right total while one circle sits on a fold and one coin is missed. So after running the program we reviewed every circle it drew against the original photo (detection_review.csv) and sorted every object into one of three groups:"),
   ...bullets([
-    [["Mean absolute error (MAE): ", { bold: true }], "the average of |predicted − true| over photos."],
-    [["Exact photos: ", { bold: true }], "how many photos received exactly the right count (a strict measure: one coin off makes the whole photo wrong)."],
-    [["Within ±1: ", { bold: true }], "how many photos were off by at most one coin."],
-    [["Count accuracy: ", { bold: true }], "1 − (sum of absolute errors ÷ total number of coins)."],
-    [["Buttons flagged: ", { bold: true }], "how many of the real buttons were recognised as buttons and removed from the coin count."],
+    [["True positive (TP): ", { bold: true }], "a circle on a real coin."],
+    [["False positive (FP): ", { bold: true }], "a circle on something that is not a coin: a fold, the edge of the pad, a button, or a second circle on the same blurred coin. Each FP was also labelled with its cause."],
+    [["False negative (FN): ", { bold: true }], "a real coin with no circle."],
   ]),
+  body("From these we report precision (TP ÷ all detections: how many circles are right), recall (TP ÷ all real coins: how many coins were found), the mean absolute count error (MAE) and the number of photos with an exact count."),
   h2("2.3 The system from start to finish"),
   figLabel(1), image("fig01_pipeline.png", CONTENT),
-  caption(1, "The complete pipeline. Dark-blue stages prepare the image; green stages find and classify objects. LoG finds blob-shaped candidates, Hough separates touching coins, and the classifier removes buttons."),
+  caption(1, "The complete pipeline. Dark-blue stages prepare the image; green stages find and classify objects. LoG finds blob-shaped candidates, Hough separates touching coins, and the last stage rejects round objects that are not coins."),
   body("The key idea is to stop working on raw brightness. The pad is bright and colourless, while every coin, bronze or silver, differs from it either in lightness or in colour. So we first estimate what the pad would look like without the coins, and then measure how far every pixel is from that estimate. All later stages work on this foreground map, which is why the same settings work for bright and dark photos."),
   h2("2.4 How each stage works"),
   stageGrid([
@@ -247,8 +252,8 @@ const methods = [
     ["4. Multi-scale LoG", "−σ²∇²G on the foreground map for 12 radii (2.5–5.5% of width), σ = r/√2, max over scales. Local maxima are coin candidates with their radius."],
     ["5. Blob verification", "Hessian eigenvalue ratio ≥ 0.25 (round, not a ridge); peak ≥ 20% of a typical coin; radius ≥ 70% of the typical coin; ≥ 40% of the response survives a grayscale opening; no stronger coin within 0.95 r."],
     ["6. Hough circles", "HOUGH_GRADIENT_ALT on the median-blurred gray image with radius 0.6–1.3 × coin radius. Circles must lie on the pad and differ from the background. LoG blobs not explained by any circle are added."],
-    ["7. Button test", "Black-hat (closing − image) highlights small dark spots. 2–4 similar, round spots grouped around the centre = sewing holes. Strongly blue/purple or pink/red objects are also buttons."],
-    ["8. Final count", "Green circles are counted as coins; red circles with an X are buttons and are not counted. Annotated images and results.csv are saved."],
+    ["7. Non-coin test", "Black-hat (closing − image) highlights small dark spots: 2–4 similar round spots around the centre are sewing holes. Strongly blue/purple or pink/red objects are also rejected."],
+    ["8. Final count", "Green circles are counted as coins; red circles with an X are round non-coin objects and are not counted. Annotated images and results.csv are saved."],
   ]),
   para("", { after: 120 }),
   figLabel(2), image("fig02_stages.png", CONTENT, { maxH: 250 }),
@@ -260,13 +265,17 @@ const methods = [
 ];
 
 // ── 03 Results ─────────────────────────────────────────────────────
-const catTable = ["clean", "noisy", "damaged"].map((c) => [c[0].toUpperCase() + c.slice(1), byCat[c].n, f2(byCat[c].mae), `${byCat[c].exact}/${byCat[c].n}`, `${byCat[c].w1}/${byCat[c].n}`]);
-catTable.push(["All photos", rows.length, f2(mae), `${exact}/${rows.length}`, `${within1}/${rows.length}`]);
+const catTable = ["clean", "noisy", "damaged"].map((c) => {
+  const b = byCat[c];
+  return [c[0].toUpperCase() + c.slice(1), b.coins, b.pred, b.tp, b.fp, b.fn, `${f1(b.prec)}%`, `${f1(b.rec)}%`, `${b.exact}/${b.n}`];
+});
+catTable.push(["All photos", T, P, TP, FP, FN, `${f1(precision)}%`, `${f1(recall)}%`, `${exact}/${rows.length}`]);
 const perPhoto = rows.map((r) => {
   const d = r.pred - r.true;
-  return [r.id, r.category, r.true, r.pred, d > 0 ? `+${d}` : `${d}`, r.true_buttons ? `${r.pred_buttons}/${r.true_buttons}` : "–", r.ms.toFixed(0)];
+  return [r.id, r.category, r.true, r.pred, r.tp, r.fp, r.fn, d > 0 ? `+${d}` : `${d}`];
 });
-perPhoto.push(["Total", "", T, P, `${E} abs.`, `${btnFound}/${btnTrue}`, `${msMean.toFixed(0)} avg`]);
+perPhoto.push(["Total", "", T, P, TP, FP, FN, `${E} abs.`]);
+const pos = (v) => typeof v === "number" && v > 0;
 const results = [
   h1("03", "Results"),
   h2("3.1 The synthetic check"),
@@ -278,76 +287,87 @@ const results = [
   caption(3, "The synthetic input and its result."),
   h2("3.2 The overall result"),
   statTiles([
-    [`${f2(countAcc)}%`, "Count accuracy", `Total error of ${E} coins out of ${T}`],
-    [f2(mae), "Mean abs. error", "Coins per photograph"],
-    [`${exact}/${rows.length}`, "Exact photos", `${within1} of ${rows.length} within ±1 coin`],
-    [`${btnFound}/${btnTrue}`, "Buttons flagged", "Excluded from the count"],
+    [`${f1(recall)}%`, "Recall", `${TP} of ${T} real coins found`],
+    [`${f1(precision)}%`, "Precision", `${TP} of ${P} detections were coins`],
+    [`${FP} / ${FN}`, "FP / FN", "False detections / missed coins"],
+    [`${exact}/${rows.length}`, "Exact photos", `only ${perfect} with no mistake at all`],
   ]),
   para("", { after: 160 }),
   label("Results by category"),
-  dataTable(["Category", "Photos", "MAE", "Exact", "Within ±1"], catTable, [2800, 1600, 1800, 1900, 1980], { boldLast: true, keep: true }),
+  dataTable(["Category", "Coins", "Counted", "TP", "FP", "FN", "Precision", "Recall", "Exact"], catTable,
+    [1480, 1000, 1080, 900, 900, 900, 1300, 1300, 1220], { boldLast: true, keep: true }),
   para("", { after: 100 }),
-  body(`The difference between the categories is large. On clean photographs the system is almost perfect: ${byCat.clean.exact} of ${byCat.clean.n} exact and every photo within one coin. Most errors come from the noisy and damaged sets. The system over-counted in ${over} photos and under-counted in ${under}, so missing coins is the more common failure.`),
+  body(`The three categories fail in different ways. On clean photographs the program found all ${byCat.clean.coins} coins with a single false detection. In the noisy set the main problem is false detections (${byCat.noisy.fp} FP against ${byCat.noisy.fn} FN): in dark and blurred photos the program "sees" coins on folds and counts smeared coins twice. In the damaged set the problem is reversed (${byCat.damaged.fp} FP against ${byCat.damaged.fn} FN): coins hidden in piles or cut by the frame are missed.`),
   h2("3.3 Results by photograph"),
-  body("Predicted minus true count for every photo. Positive means extra detections, negative means missed coins. Buttons are shown as flagged / present. Runtime is the time of count_coins on a 1600 × 900 image."),
-  dataTable(["Photo", "Category", "True", "Predicted", "Error", "Buttons", "Runtime (ms)"], perPhoto,
-    [1100, 1500, 1100, 1400, 1300, 1400, 2280], { boldLast: true,
-      colourFn: (ri, i, v) => (i === 4 && ri < rows.length && v !== "0" ? (v.startsWith("+") ? "C0392B" : BLUE) : undefined) }),
+  body("For every photo: the true number of coins, the number the program counted, and the circle-by-circle review. Counted = TP + FP and True = TP + FN."),
+  dataTable(["Photo", "Category", "True", "Counted", "TP", "FP", "FN", "Count error"], perPhoto,
+    [1100, 1500, 1100, 1300, 1100, 1100, 1100, 1780], { boldLast: true,
+      colourFn: (ri, i, v) => (ri >= rows.length ? undefined
+        : i === 5 && pos(v) ? GREEN : i === 6 && pos(v) ? BLUE
+        : i === 7 && v !== "0" ? (v.startsWith("+") ? "C0392B" : BLUE) : undefined) }),
   para("", { after: 100 }),
   figLabel(4), image("fig04_per_image.png", CONTENT),
-  caption(4, "Counting error per photograph, coloured by category. Clean photos (green) are almost all exact; the single large over-count is the motion-blurred photo P14."),
-  h2("3.4 Examples that received the exact count"),
+  caption(4, `False detections (up) and missed coins (down) for every photo. Clean photos are almost free of mistakes; dark photos mostly add false detections (the motion-blurred ${pid("12.48.26 (15)")} alone has ${row("12.48.26 (15)").fp}); damaged photos mostly lose coins.`),
+  h2("3.4 An exact count is not always a correct count"),
+  body(`${exact} photos received the exact number of coins, but only ${perfect} photos had no mistake at all. In ${hidden.length} "exact" photos (${hidden.map((r) => r.id).join(", ")}) a false detection and a missed coin cancelled each other out. All ${byCat.clean.exact} exact clean photos were truly perfect; every exact photo in the noisy and damaged sets hid mistakes. This is the main reason we reviewed every circle instead of comparing totals only.`),
+  figLabel(12), image("fig12_hidden_errors.png", CONTENT * 0.8, { maxH: 470 }),
+  caption(12, `${pid("12.48.26 (11)")}: the program counted ${row("12.48.26 (11)").pred} coins and there are ${row("12.48.26 (11)").true}, yet two circles lie on empty pad (FP, red) and two faint coins have no circle (FN, blue).`),
+  h2("3.5 What the machine mistook for a coin"),
+  body(`Every false detection was labelled with its cause. The largest group, ${fpCause.fold} of ${FP}, are pad folds and dark patches of background, almost all in the dark photos where the contrast of a real coin is close to that of a fold. ${fpCause.blur} are second circles on a coin smeared by motion blur, ${fpCause.edge} lie on the white hem at the top or bottom edge of the pad, and ${fpCause.button} are grey buttons that passed the non-coin test.`),
+  figLabel(11), image("fig11_fp_causes.png", CONTENT * 0.7),
+  caption(11, `Causes of the ${FP} false positives.`),
+  h2("3.6 Examples with no mistakes"),
   figLabel(5), image("fig05_exact.png", CONTENT, { maxH: 520 }),
-  caption(5, `Three exact results: ${pid("12.48.26 (4)")} and ${pid("12.48.26 (1)")} (clean) and ${pid("12.48.26 (12)")} (a dark photo). Coins that touch each other are still counted separately, and the fold grid of the pad produces no false detections.`),
-  h2("3.5 How each stage reduced the error"),
-  body("We built the system step by step and measured it on all 26 photographs after every change. This turned out to be the most useful part of the project, because it shows which idea actually solved which problem."),
+  caption(5, `Three clean photos with every coin found and no false detection. Coins that touch each other are counted separately, and the fold grid of the pad produces no circles.`),
+  h2("3.7 How each stage reduced the error"),
+  body("We built the system step by step and measured it on all 26 photographs after every change, against a preliminary count of the coins. This shows which idea solved which problem."),
   figLabel(6), image("fig06_progress.png", CONTENT * 0.8),
-  caption(6, "Mean absolute error of each development version on the same 26 photos."),
+  caption(6, "Mean absolute count error of each development version on the same 26 photos (preliminary count)."),
   ...bullets([
     [["Threshold + watershed (MAE 7.38). ", { bold: true }], "Our first version thresholded the foreground map and split touching blobs with a watershed. The pad folds passed the threshold, and in dark photos the threshold missed coins completely."],
     [["LoG blobs (5.81). ", { bold: true }], "Looking for blob-shaped peaks instead of thresholded regions helped in dark photos, but fold intersections also look like blobs."],
     [["+ Hessian shape test (2.54). ", { bold: true }], "The biggest single improvement. A fold is a ridge: one eigenvalue of the Hessian is large and the other near zero. A coin is round, so both are similar. Rejecting ridge-like peaks removed most false detections."],
     [["+ Hough circles (1.19). ", { bold: true }], "LoG merges coins that touch into one blob. The circle Hough transform uses the visible arc of each coin, so it separates them."],
-    [["+ Button classifier (1.27). ", { bold: true }], "The final step targets buttons rather than the coin count. It made the button test more sensitive, and the coin MAE changed only slightly."],
+    [["+ Non-coin classifier (1.27). ", { bold: true }], "The final step targets buttons rather than the coin count; it made the hole test more sensitive and changed the coin MAE only slightly."],
   ]),
-  h2("3.6 The pad folds"),
-  body(`The folds and seams of the pad were the most common source of false detections during development. Figure 7 shows one damaged photograph (${pid("12.48.26 (21)")}): LoG finds dozens of peaks along the fold lines. The Hessian test rejected ${stats.folds_rejected} of them in this photo alone.`),
+  h2("3.8 The pad folds"),
+  body(`Figure 7 shows why the Hessian test matters (${pid("12.48.26 (21)")}): LoG finds dozens of peaks along the fold lines, and the Hessian test rejected ${stats.folds_rejected} of them in this photo alone. The folds that still get through (Section 3.5) are the ones in dark photos, where a fold and a coin look almost the same.`),
   figLabel(7), image("fig07_folds.png", CONTENT * 0.75, { maxH: 560 }),
   caption(7, "Red: LoG peaks rejected as ridge-like (fold lines). Green: the final detections. Almost all rejected peaks lie exactly on the folds."),
-  h2("3.7 Buttons"),
-  body(`Three photographs contain four buttons each, among the coins. ${btnFound} of the ${btnTrue} buttons were flagged (red circle with an X) and excluded from the count. In our visual check of the annotated outputs, every red mark sat on a button, so no coin was removed by mistake.`),
+  h2("3.9 Round objects that are not coins"),
+  body(`Three photographs contain ${nonCoin} buttons among the coins. ${rejected} of them were rejected (red circle with an X) and not counted, and no coin was rejected by mistake. Two grey buttons were counted as coins (${pid("12.48.26 (18)")} and ${pid("12.48.26 (20)")}): they have no telling colour and their holes were not found. One dark-blue button in ${pid("12.48.26 (20)")} lies under other coins and was not detected at all, so it did not affect the count.`),
   figLabel(8), image("fig08_buttons.png", CONTENT, { maxH: 470 }),
-  caption(8, `The three photographs with buttons (${pid("12.48.26 (18)")}, ${pid("12.48.26 (19)")}, ${pid("12.48.26 (20)")}). Blue, dark-navy and pink buttons are recognised by colour; the marbled grey button in the first photo has no telling colour and its holes were not found, so it was counted as a coin.`),
+  caption(8, `The three photographs with buttons (${pid("12.48.26 (18)")}, ${pid("12.48.26 (19)")}, ${pid("12.48.26 (20)")}). Blue, dark-navy and pink buttons are recognised by colour, grey ones only by their holes.`),
   figLabel(9), image("fig09_holes.png", CONTENT * 0.85),
   caption(9, "The black-hat transform keeps only small dark details. On a button the sewing holes light up as a symmetric group near the centre; on a coin the embossing gives no such group."),
-  h2("3.8 Where the errors came from"),
+  h2("3.10 Where the largest errors came from"),
   figLabel(10), image("fig10_errors.png", CONTENT, { maxH: 520 }),
-  caption(10, `The three largest errors. ${pid("12.48.26 (15)")}: strong motion blur smears each coin into several blobs (22 counted, 14 real). ${pid("12.48.25")}: a dense pile where several coins are almost completely hidden (10 of 14). ${pid("12.48.26 (6)")}: coins cut by the image frame are only half-circles (8 of 11).`),
+  caption(10, `${pid("12.48.26 (15)")}: strong motion blur smears each coin into several blobs (${row("12.48.26 (15)").pred} counted, ${row("12.48.26 (15)").true} real). ${pid("12.48.25")}: a dense pile where several coins are almost completely hidden (${row("12.48.25").tp} of ${row("12.48.25").true} found). ${pid("12.48.26 (6)")}: coins cut by the image frame are only half-circles (${row("12.48.26 (6)").tp} of ${row("12.48.26 (6)").true}).`),
 ];
 
 // ── 04 Discussion ──────────────────────────────────────────────────
 const discussion = [
   h1("04", "Discussion and conclusions"),
   h2("What worked"),
-  body(`On clean photographs the system is almost perfect (MAE ${f2(byCat.clean.mae)}), and this includes coins that touch each other and a pad covered with folds. It also worked on several dark photographs, because every decision is made on the foreground map rather than on raw brightness, and every threshold is relative to the coins in the same photo. Two detectors were needed: LoG is robust to blur but merges touching coins, while Hough separates touching coins but needs sharp edges.`),
-  h2("What failed and why"),
-  body("Motion blur caused the largest single error: a coin smeared along the direction of motion is no longer a disk, so it produces several blobs and each is counted. Dense piles caused the opposite problem: a coin that shows only a thin crescent gives neither a LoG blob nor enough arc for Hough. Coins cut by the image frame are half-disks with a weak response. Most errors are undercounts, which means the system prefers to miss a coin rather than invent one."),
+  body(`On clean photographs the program found all ${byCat.clean.coins} coins with a single false detection, including coins that touch each other on a pad covered with folds. Every decision is made on the foreground map, and every threshold is relative to the coins in the same photo, so the same settings also found ${f1(byCat.noisy.rec)}% of the coins in the dark and blurred set. Two detectors were needed: LoG is robust to blur but merges touching coins, while Hough separates touching coins but needs sharp edges.`),
+  h2("Two different kinds of failure"),
+  body(`The review showed that the program fails in two opposite ways, depending on the photo. In dark and blurred photos it accepts too much: folds and smeared patches pass as coins (precision ${f1(byCat.noisy.prec)}%). In piles and at the image frame it accepts too little: a coin that shows only a crescent or half a disk gives neither a LoG blob nor enough arc for Hough (recall ${f1(byCat.damaged.rec)}%). A single threshold cannot fix both: loosening it would find more hidden coins but add more folds in dark photos.`),
   h2("What the folds taught us"),
-  body("Brightness alone is not enough to decide what is an object: the folds of the pad are as different from the pad as a coin is. What separates them is shape, measured locally by the Hessian: a fold is long and thin, a coin is round. This single shape test reduced the error by more than half."),
-  h2("What the buttons taught us"),
-  body("Size and roundness cannot separate a button from a coin. Colour (no coin is blue or pink) and sewing holes, isolated by the black-hat transform, can. A grey button is the hard case: only its small holes reveal it, and they may not survive blur."),
+  body("Brightness alone is not enough to decide what is an object: the folds of the pad are as different from the pad as a coin is. What separates them is shape, measured locally by the Hessian: a fold is long and thin, a coin is round. This shape test halved the error during development, and the folds that still pass are the ones in photos too dark to show their shape."),
+  h2("What the non-coin objects taught us"),
+  body("Size and roundness cannot separate a button from a coin. Colour (no coin is blue or pink) and sewing holes, isolated by the black-hat transform, can. A grey button is the hard case: only its small holes reveal it, and they may not survive blur or low resolution."),
   h2("Reading the measures"),
-  body(`Only ${exact} of ${rows.length} photos were counted exactly, yet the count accuracy is ${f2(countAcc)}% and ${within1} photos are within one coin. The exact-photo measure is strict: a single missed coin among fourteen makes the whole photo wrong.`),
+  body(`Comparing totals alone would have told us that ${exact} of ${rows.length} photos were correct. Checking every circle showed that only ${perfect} were free of mistakes, and that ${FP} false detections and ${FN} missed coins partly cancel in the total (${P} counted against ${T} real). Precision and recall describe the detector; the count error describes only the final number.`),
   h2("What could be improved"),
   ...bullets([
     "Estimate the direction of motion blur (e.g. from the elongation of the strongest blobs) and merge detections lying along it.",
+    "Exclude the white hem of the pad from the pad mask, which would remove the edge false positives.",
     "Detect coins cut by the frame with partial-circle fitting near the image border.",
-    "Use the colour of the coin rim in addition to holes to catch grey buttons.",
-    "Mark coin positions in the ground truth so errors can be split into false positives and false negatives.",
+    "Use the colour of the rim in addition to holes to catch grey buttons.",
     "A fully hidden coin cannot be counted from a single photo; a second view would be needed.",
   ]),
   h2("Final conclusion"),
-  body(`The project answered its research question for the clean and moderately difficult cases. With classical tools only (a median background model, a Lab foreground map, multi-scale LoG, a Hessian shape test, grayscale morphology, a Hough transform and a black-hat hole detector), the system counted coins with ${f2(countAcc)}% count accuracy and recognised ${btnFound} of ${btnTrue} buttons, with no training data and about ${(msMean / 1000).toFixed(1)} seconds per photo. Strong blur, dense piles and coins cut by the frame remain the main limitations; for piles this is a limit of the photo itself.`),
+  body(`The project answered its research question for clean and moderately difficult photos. With classical tools only (a median background model, a Lab foreground map, multi-scale LoG, a Hessian shape test, grayscale morphology, a Hough transform and a black-hat hole detector), the program found ${f1(recall)}% of the coins with ${f1(precision)}% precision and rejected ${rejected} of ${nonCoin} buttons, with no training data and about ${(msMean / 1000).toFixed(1)} seconds per photo. The circle-by-circle review was as important as the algorithm itself: it revealed that dark photos produce false coins while piles hide real ones, a difference that the total count could not show.`),
 ];
 
 // ── Appendices ─────────────────────────────────────────────────────
@@ -358,7 +378,7 @@ const appendix = [
   ...codeBlock("Listing 1", "coin_counter.py"),
   ...codeBlock("Listing 2", "run.py"),
   h1("B", "Original test photographs"),
-  body("All 26 photographs with their ID, category and manual coin count."),
+  body("All 26 photographs with their ID, category and the number of coins counted by hand."),
   image("figA_inputs.png", CONTENT, { maxH: 820 }),
 ];
 

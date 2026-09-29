@@ -14,7 +14,12 @@ const sum = (a) => a.reduce((x, y) => x + y, 0);
 const T = sum(rows.map((r) => r.true)), E = sum(rows.map((r) => Math.abs(r.pred - r.true)));
 const exact = rows.filter((r) => r.pred === r.true).length;
 const within1 = rows.filter((r) => Math.abs(r.pred - r.true) <= 1).length;
-const btnT = sum(rows.map((r) => r.true_buttons)), btnF = sum(rows.map((r) => r.pred_buttons));
+const btnT = sum(rows.map((r) => r.true_noncoin)), btnF = sum(rows.map((r) => r.rejected_noncoin));
+const TP = sum(rows.map((r) => r.tp)), FP = sum(rows.map((r) => r.fp)), FN = sum(rows.map((r) => r.fn));
+const P = sum(rows.map((r) => r.pred));
+const precision = (100 * TP / (TP + FP)).toFixed(1), recall = (100 * TP / (TP + FN)).toFixed(1);
+const perfect = rows.filter((r) => r.fp === 0 && r.fn === 0).length;
+const blur = rows.find((r) => r.short === "12.48.26 (15)");
 const clean = rows.filter((r) => r.category === "clean");
 const cleanMae = sum(clean.map((r) => Math.abs(r.pred - r.true))) / clean.length;
 const acc = (100 * (1 - E / T)).toFixed(2);
@@ -78,8 +83,8 @@ const header = table([hL, hR], [[
 const greenBar = new Paragraph({ spacing: { before: 0, after: 200 }, border: { top: { style: BorderStyle.SINGLE, size: 48, color: GREEN, space: 0 } }, children: [] });
 
 // ── Key numbers strip ──────────────────────────────────────────────
-const tiles = [[`${acc}%`, "count accuracy", `${E} coins off out of ${T}`], [(E / rows.length).toFixed(2), "mean abs. error", "coins per photo"],
-  [`${exact}/${rows.length}`, "exact photos", `${within1}/${rows.length} within ±1 coin`], [`${btnF}/${btnT}`, "buttons excluded", "by holes or colour"]];
+const tiles = [[`${recall}%`, "recall", `${TP} of ${T} coins found`], [`${precision}%`, "precision", `${TP} of ${P} detections were coins`],
+  [`${FP} / ${FN}`, "false / missed", "FP non-coins · FN missed coins"], [`${exact}/${rows.length}`, "exact counts", `only ${perfect} with no mistake at all`]];
 const tw = split(4);
 const numbers = table(tw, [tiles.map(([big, small, note], i) => cell([
   p([run(big, { size: 64, bold: true, color: i % 2 ? BLUE_DARK : "FFFFFF" })], { align: AlignmentType.CENTER, after: 0, line: 240 }),
@@ -94,7 +99,7 @@ const rowA = table([aL, aG, aRw], [[
     heading("The problem"),
     p("People count coins at a glance; a computer sees only pixels. Our phone photos add three traps: a white pad full of folds and seams, dark or motion-blurred shots, and buttons the size of a coin mixed in."),
     p([run("Question  ", { bold: true, color: GREEN }), run("Can fixed classical rules, with no training, count only the coins under these conditions?")]),
-    p([run("Data  ", { bold: true, color: GREEN }), run(`${rows.length} photos · ${T} coins · ${btnT} buttons, hand-counted and split into clean, noisy (dark / blurred) and damaged (piles, cut coins, buttons). A synthetic image with 6 discs checked the code: ${stats.synthetic_detected} of 6 found.`)]),
+    p([run("Data  ", { bold: true, color: GREEN }), run(`${rows.length} photos · ${T} coins · ${btnT} buttons, hand-counted and split into clean, noisy (dark / blurred) and damaged (piles, cut coins, buttons). Then every circle the program drew was checked: coin (TP), not a coin (FP) or a coin without a circle (FN).`)]),
   ], aL),
   cell([p("")], aG),
   cell([
@@ -120,31 +125,31 @@ const rowC = table([c3, G, c3, G, c3r], [[
   cell([
     heading("Results"),
     img("fig05_exact.png", c3),
-    cap("Exact counts on clean and dark photos."),
-    p(`Clean photos: MAE ${cleanMae.toFixed(2)}, all within one coin. About ${(msMean / 1000).toFixed(1)} s per 1600 × 900 photo.`),
+    cap("Three clean photos with no mistake."),
+    p(`Clean photos: all ${sum(clean.map((r) => r.true))} coins found, 1 false detection. Dark photos add false coins; piles and the frame hide real ones.`),
   ], c3),
   cell([p("")], G),
   cell([
-    heading("What made it work"),
-    img("fig06_progress.png", c3),
-    cap("Error after each development step."),
-    p("Pad folds fooled every early version. The Hessian test, round versus ridge, cut the error by more than half."),
+    heading("What was mistaken for a coin"),
+    img("fig11_fp_causes.png", c3),
+    cap(`Causes of the ${FP} false positives.`),
+    p(`${exact} photos got the exact total, but in ${exact - perfect} of them a false coin and a missed coin cancelled out.`),
   ], c3),
   cell([p("")], G),
   cell([
-    heading("Coins vs. buttons"),
+    heading("Round, but not a coin"),
     img("fig08_buttons.png", c3r),
     cap("Red X = button, not counted."),
-    p("Blue, navy and pink buttons fail the colour test; for the rest, black-hat reveals 2–4 sewing holes around the centre."),
+    p(`${btnF} of ${btnT} buttons rejected by colour or sewing holes (black-hat); 2 grey buttons passed as coins.`),
   ], c3r),
 ]]);
 
 // ── Row D: three green take-away boxes ─────────────────────────────
 const dw = split(3);
 const take = [
-  ["Conclusion", `Classical tools alone reached ${acc}% count accuracy and excluded ${btnF} of ${btnT} buttons. Shape (Hessian) beat brightness for ignoring folds, and LoG + Hough together handled blurry and touching coins.`],
-  ["Limitations", "Strong motion blur splits a coin into several blobs (22 vs 14). Dense piles hide coins, coins cut by the frame are half-circles, and a grey button without visible holes looks like a coin."],
-  ["Next steps", "Merge detections along the blur direction, fit partial circles at the image border, use rim colour for grey buttons, and mark coin positions to separate false positives from misses."],
+  ["Conclusion", `Classical tools alone found ${recall}% of the coins with ${precision}% precision and rejected ${btnF} of ${btnT} buttons. Checking every circle, not just the total, showed where and why the machine fails.`],
+  ["Limitations", `Motion blur splits a coin into several blobs (${blur.pred} counted vs ${blur.true}). Dense piles hide coins, coins cut by the frame are half-circles, and a grey button without visible holes looks like a coin.`],
+  ["Next steps", "Merge detections along the blur direction, drop the white hem from the pad mask, fit partial circles at the image border, and use rim colour to catch grey buttons."],
 ];
 const rowD = table(dw, [take.map(([t, v], i) => cell([
   p([run(t, { size: 30, bold: true, color: i === 0 ? "FFFFFF" : GREEN })], { after: 80 }),
